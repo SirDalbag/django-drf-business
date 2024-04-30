@@ -9,6 +9,7 @@ urlpatterns = [
         include(
             [
                 path("projects", views.ProjectList.as_view()),
+                path("projects/<int:id>/", views.ProjectDetail.as_view()),
             ]
         ),
     ),
