@@ -97,7 +97,7 @@ class ProjectList(APIView):
         """
 
         try:
-            projects = models.Project.objects.filter(is_active=True)
+            projects = models.Project.objects.all()
             serializer = serializers.ProjectSerializer(projects, many=True)
             return Response(data={"data": serializer.data}, status=status.HTTP_200_OK)
         except Exception as error:
@@ -110,6 +110,7 @@ class ProjectList(APIView):
         Create a new project.
 
             Parameters:
+                request (Request): The request object.
                 authors (str): Comma-separated list of usernames.
                 category (str): Category slug.
                 tags (str): Comma-separated list of tags slugs.
@@ -140,26 +141,173 @@ class ProjectList(APIView):
             if authors:
                 users = User.objects.filter(username__in=authors.split(","))
                 project.authors.set(users)
-            tags_slugs = request.POST.get("tags", None)
-            if tags_slugs:
-                tags = models.Tag.objects.filter(slug__in=tags_slugs.split(","))
+            tag_slugs = request.POST.get("tags", None)
+            if tag_slugs:
+                tags = models.Tag.objects.filter(slug__in=tag_slugs.split(","))
                 project.tags.set(tags)
-            images_urls = request.POST.get("images", None)
-            if images_urls:
+            image_urls = request.POST.get("images", None)
+            if image_urls:
                 images = models.Image.objects.bulk_create(
-                    [models.Image(url=url) for url in images_urls.split(",")]
+                    [models.Image(url=url) for url in image_urls.split(",")]
                 )
                 project.images.set(images)
-            files_urls = request.POST.get("files", None)
-            if files_urls:
+            file_urls = request.POST.get("files", None)
+            if file_urls:
                 files = models.File.objects.bulk_create(
-                    [models.File(url=url) for url in files_urls.split(",")]
+                    [models.File(url=url) for url in file_urls.split(",")]
                 )
                 project.files.set(files)
             serializer = serializers.ProjectSerializer(project, many=False)
             return Response(
                 data={"data": serializer.data}, status=status.HTTP_201_CREATED
             )
+        except Exception as error:
+            return Response(
+                data={"error": str(error)}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class ProjectDetail(APIView):
+    """
+    Receive the project, update it, or delete it.
+
+        Permissions:
+            Authenticated users only.
+
+        Methods:
+            GET: Get the project.
+            PUT: Update the project.
+            DELETE: Delete the project.
+
+        Parameters:
+            id (int): Project id.
+            authors (str): Comma-separated list of usernames.
+            category (str): Category slug.
+            tags (str): Comma-separated list of tags slugs.
+            title (str): Project title.
+            description (str): Project description.
+            images (str): Comma-separated list of image URLs.
+            files (str): Comma-separated list of file URLs.
+
+        Returns:
+            If successful:
+                [GET] (Response): JSON object with request status 200 OK and project.
+                [PUT] (Response): JSON object with request status 200 OK and updated project.
+                [DELETE] (Response): JSON object with request status 204 No Content.
+            If unsuccessful:
+                (Response): JSON object with request status 400 Bad Request and error message.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, id: int) -> models.Project:
+        """
+        Get the project.
+
+            Parameters:
+                id (int): Project id.
+
+            Returns:
+                (models.Project): Project object.
+        """
+
+        try:
+            return models.Project.objects.get(id=id)
+        except Exception as error:
+            raise models.Project.DoesNotExist()
+
+    def get(self, request: Request, id: int) -> Response:
+        """
+        Get the project.
+
+            Parameters:
+                request (Request): The request object.
+                id (int): Project id.
+
+            Returns:
+                If successful:
+                    (Response): JSON object with request status 200 OK and project.
+                If unsuccessful:
+                    (Response): JSON object with request status 400 Bad Request and error message.
+        """
+
+        try:
+            project = self.get_object(id)
+            serializer = serializers.ProjectSerializer(project, many=False)
+            return Response(data={"data": serializer.data}, status=status.HTTP_200_OK)
+        except Exception as error:
+            return Response(
+                data={"error": str(error)}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+    def put(self, request: Request, id: int) -> Response:
+        """
+        Update the project.
+
+            Parameters:
+                request (Request): The request object.
+                id (int): Project id.
+                authors (str): Comma-separated list of usernames.
+                category (str): Category slug.
+                tags (str): Comma-separated list of tags slugs.
+                title (str): Project title.
+                description (str): Project description.
+                images (str): Comma-separated list of image URLs.
+                files (str): Comma-separated list of file URLs.
+
+            Returns:
+                If successful:
+                    (Response): JSON object with request status 200 OK and updated project.
+                If unsuccessful:
+                    (Response): JSON object with request status 400 Bad Request and error message.
+        """
+
+        try:
+            project = self.get_object(id)
+            title = request.POST.get("title", None)
+            if title and project.title != title:
+                project.title = title
+            description = request.POST.get("description", None)
+            if project.description != description:
+                project.description = description
+            category_slug = request.POST.get("category", None)
+            if category:
+                category = models.Category.objects.get(slug=category_slug)
+            if project.category != category:
+                project.category = category
+            tag_slugs = request.POST.get("tags", None)
+            if tag_slugs:
+                tags = models.Tag.objects.filter(slug__in=tag_slugs.split(","))
+            if project.tags != tags:
+                project.tags = tags
+            project.save()
+            serializer = serializers.ProjectSerializer(project, many=False)
+            return Response(data={"data": serializer.data}, status=status.HTTP_200_OK)
+        except Exception as error:
+            return Response(
+                data={"error": str(error)}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+    def delete(self, request: Request, id: int) -> Response:
+        """
+        Delete the project.
+
+            Parameters:
+                request (Request): The request object.
+                id (int): Project id.
+
+            Returns:
+                If successful:
+                    (Response): JSON object with request status 204 No Content.
+                If unsuccessful:
+                    (Response): JSON object with request status 400 Bad Request and error message.
+        """
+
+        try:
+            project = self.get_object(id)
+            project.is_active = False
+            project.save()
+            return Response(status=status.HTTP_204_NO_CONTENT)
         except Exception as error:
             return Response(
                 data={"error": str(error)}, status=status.HTTP_400_BAD_REQUEST

@@ -648,7 +648,7 @@ class Project(models.Model):
         verbose_name="Updated At",
     )
     is_active = models.BooleanField(
-        default=False,
+        default=True,
         verbose_name="Is Active",
     )
     status = models.ForeignKey(

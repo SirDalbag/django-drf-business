@@ -559,7 +559,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "is_active",
-                    models.BooleanField(default=False, verbose_name="Is Active"),
+                    models.BooleanField(default=True, verbose_name="Is Active"),
                 ),
                 (
                     "authors",
