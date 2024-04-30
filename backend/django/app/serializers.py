@@ -132,3 +132,81 @@ class ProjectSerializer(serializers.ModelSerializer):
         """
 
         return obj.status.name if obj.status else None
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    """
+    Serializer for the Comment model.
+
+        Fields:
+            id (int): ID of the comment.
+            user (int): User who commented the project.
+            username (str): Username of the comment author.
+            project (int): Project that was commented.
+            text (str): Text of the comment.
+            images (list[str]): List of image urls of the comment.
+            files (list[str]): List of file urls of the comment.
+            created_at (datetime): Date and time when the comment was created.
+            updated_at (datetime): Date and time when the comment was last updated.
+
+        Methods:
+            get_username(): Returns the username of the comment author.
+            get_images(): Returns a list of image urls of the comment.
+            get_files(): Returns a list of file urls of the comment.
+    """
+
+    username = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
+    files = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.Comment
+        fields = [
+            "id",
+            "user",
+            "project",
+            "text",
+            "images",
+            "files",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_username(self, obj):
+        """
+        Returns the username of the comment author.
+
+            Parameters:
+                obj (Comment): The comment object.
+
+            Returns:
+                (str or None): Username of the comment author or None if no user.
+        """
+
+        return obj.user.username if obj.user else None
+
+    def get_images(self, obj):
+        """
+        Returns a list of image urls of the comment.
+
+            Parameters:
+                obj (Comment): The comment object.
+
+            Returns:
+                (list[str] or None): List of image urls of the comment or None if no images.
+        """
+
+        return [str(image.url) for image in obj.images.all()] if obj.images else None
+
+    def get_files(self, obj):
+        """
+        Returns a list of file urls of the comment.
+
+            Parameters:
+                obj (Comment): The comment object.
+
+            Returns:
+                (list[str] or None): List of file urls of the comment or None if no files.
+        """
+
+        return [str(file.url) for file in obj.files.all()] if obj.files else None

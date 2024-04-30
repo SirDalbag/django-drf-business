@@ -59,7 +59,7 @@ class ProjectList(APIView):
             Authenticated users only.
 
         Methods:
-            GET: Get a list of all active projects.
+            GET: Get a list of all projects.
             POST: Create a new project.
 
         Parameters:
@@ -84,7 +84,7 @@ class ProjectList(APIView):
 
     def get(self, request: Request) -> Response:
         """
-        Get a list of all active projects.
+        Get a list of all projects.
 
             Parameters:
                 request (Request): The request object.
@@ -128,6 +128,8 @@ class ProjectList(APIView):
 
         try:
             title = request.POST.get("title", None)
+            if not title:
+                raise Exception("Title is required.")
             description = request.POST.get("description", None)
             category_slug = request.POST.get("category", None)
             if category:
@@ -200,7 +202,7 @@ class ProjectDetail(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get_object(self, id: int) -> models.Project:
+    def get_project(self, id: int) -> models.Project:
         """
         Get the project.
 
@@ -232,7 +234,7 @@ class ProjectDetail(APIView):
         """
 
         try:
-            project = self.get_object(id)
+            project = self.get_project(id)
             serializer = serializers.ProjectSerializer(project, many=False)
             return Response(data={"data": serializer.data}, status=status.HTTP_200_OK)
         except Exception as error:
@@ -263,7 +265,7 @@ class ProjectDetail(APIView):
         """
 
         try:
-            project = self.get_object(id)
+            project = self.get_project(id)
             title = request.POST.get("title", None)
             if title and project.title != title:
                 project.title = title
@@ -304,10 +306,131 @@ class ProjectDetail(APIView):
         """
 
         try:
-            project = self.get_object(id)
+            project = self.get_project(id)
             project.is_active = False
             project.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as error:
+            return Response(
+                data={"error": str(error)}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class CommentList(APIView):
+    """
+    Receive all comments or create a new comment.
+
+        Permissions:
+            Authenticated users only.
+
+        Methods:
+            GET: Get a list of all comments.
+            POST: Create a new comment.
+
+        Parameters:
+            authors (str): Comma-separated list of usernames.
+            category (str): Category slug.
+            tags (str): Comma-separated list of tags slugs.
+            title (str): Project title.
+            description (str): Project description.
+            images (str): Comma-separated list of image URLs.
+            files (str): Comma-separated list of file URLs.
+
+        Returns:
+            If successful:
+                [GET] (Response): JSON object with request status 200 OK and list of projects.
+                [POST] (Response): JSON object with request status 201 Created and new project.
+            If unsuccessful:
+                (Response): JSON object with request status 400 Bad Request and error message.
+
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get_project(self, id: int) -> models.Project:
+        """
+        Get the project.
+
+            Parameters:
+                id (int): Project id.
+
+            Returns:
+                (models.Project): Project object.
+        """
+
+        try:
+            return models.Project.objects.get(id=id)
+        except Exception as error:
+            raise models.Project.DoesNotExist()
+
+    def get(self, request: Request, id: int) -> Response:
+        """
+        Get a list of all comments.
+
+            Parameters:
+                request (Request): The request object.
+                id (int): Project id.
+
+            Returns:
+                If successful:
+                    (Response): JSON object with request status 200 OK and list of comments.
+                If unsuccessful:
+                    (Response): JSON object with request status 400 Bad Request and error message.
+        """
+
+        try:
+            project = self.get_project(id)
+            comments = models.Comment.objects.filter(project=project)
+            serializer = serializers.CommentSerializer(comments, many=True)
+            return Response(data={"data": serializer.data}, status=status.HTTP_200_OK)
+        except Exception as error:
+            return Response(
+                data={"error": str(error)}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+    def post(self, request: Request, id: int) -> Response:
+        """
+        Create a new comment.
+
+            Parameters:
+                request (Request): The request object.
+                id (int): Project id.
+                text (str): Comment text.
+                images (str): Comma-separated list of image URLs.
+                files (str): Comma-separated list of file URLs.
+
+            Returns:
+                If successful:
+                    (Response): JSON object with request status 201 Created and new comment.
+                If unsuccessful:
+                    (Response): JSON object with request status 400 Bad Request and error message.
+        """
+
+        try:
+            user = request.user
+            project = self.get_project(id)
+            text = request.POST.get("text", None)
+            if not text:
+                raise Exception("Comment text is required.")
+            comment = models.Comment.objects.create(
+                user=user, project=project, text=text
+            )
+            image_urls = request.POST.get("images", None)
+            if image_urls:
+                images = models.Image.objects.bulk_create(
+                    [models.Image(url=url) for url in image_urls.split(",")]
+                )
+                comment.images.set(images)
+            file_urls = request.POST.get("files", None)
+            if file_urls:
+                files = models.File.objects.bulk_create(
+                    [models.File(url=url) for url in file_urls.split(",")]
+                )
+                comment.files.set(files)
+            serializer = serializers.CommentSerializer(comment, many=False)
+            return Response(
+                data={"data": serializer.data}, status=status.HTTP_201_CREATED
+            )
         except Exception as error:
             return Response(
                 data={"error": str(error)}, status=status.HTTP_400_BAD_REQUEST
