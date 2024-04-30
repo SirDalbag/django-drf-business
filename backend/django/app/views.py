@@ -126,51 +126,36 @@ class ProjectList(APIView):
         """
 
         try:
-            authors = request.POST.get("authors", None)
-            authors = (
-                User.objects.filter(username__in=authors.split(","))
-                if authors
-                else None
-            )
-            category_slug = request.POST.get("category", None)
-            category = (
-                models.Category.objects.get(slug=category_slug)
-                if category_slug
-                else None
-            )
-            tags_slugs = request.POST.get("tags", None)
-            tags = (
-                models.Tag.objects.filter(slug__in=tags_slugs.split(","))
-                if tags_slugs
-                else None
-            )
             title = request.POST.get("title", None)
             description = request.POST.get("description", None)
-            images_urls = request.POST.get("images", None)
-            images = (
-                [models.Image(url=image_url) for image_url in images_urls.split(",")]
-                if images_urls
-                else None
-            )
-            files_urls = request.POST.get("files", None)
-            files = (
-                [models.File(url=file_url) for file_url in files_urls.split(",")]
-                if files_urls
-                else None
-            )
+            category_slug = request.POST.get("category", None)
+            if category:
+                category = models.Category.objects.get(slug=category_slug)
             project = models.Project.objects.create(
                 title=title,
                 description=description,
                 category=category,
             )
+            authors = request.POST.get("authors", None)
             if authors:
-                project.authors.set(authors)
-            if tags:
+                users = User.objects.filter(username__in=authors.split(","))
+                project.authors.set(users)
+            tags_slugs = request.POST.get("tags", None)
+            if tags_slugs:
+                tags = models.Tag.objects.filter(slug__in=tags_slugs.split(","))
                 project.tags.set(tags)
-            if images:
-                project.images.bulk_create(images)
-            if files:
-                project.files.bulk_create(files)
+            images_urls = request.POST.get("images", None)
+            if images_urls:
+                images = models.Image.objects.bulk_create(
+                    [models.Image(url=url) for url in images_urls.split(",")]
+                )
+                project.images.set(images)
+            files_urls = request.POST.get("files", None)
+            if files_urls:
+                files = models.File.objects.bulk_create(
+                    [models.File(url=url) for url in files_urls.split(",")]
+                )
+                project.files.set(files)
             serializer = serializers.ProjectSerializer(project, many=False)
             return Response(
                 data={"data": serializer.data}, status=status.HTTP_201_CREATED
