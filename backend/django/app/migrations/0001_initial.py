@@ -214,7 +214,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
-                    "file",
+                    "url",
                     models.FileField(
                         help_text="Only .pdf, .doc, .docx, .xls, .xlsx files!",
                         upload_to="files/",
@@ -227,6 +227,10 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
+            options={
+                "verbose_name": "File",
+                "verbose_name_plural": "Files",
+            },
         ),
         migrations.CreateModel(
             name="Image",
@@ -241,7 +245,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
-                    "image",
+                    "url",
                     models.ImageField(
                         help_text="Only .jpg, .png, .jpeg files!",
                         upload_to="images/",
@@ -254,6 +258,10 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
+            options={
+                "verbose_name": "Image",
+                "verbose_name_plural": "Images",
+            },
         ),
         migrations.CreateModel(
             name="Position",
@@ -434,30 +442,9 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 (
-                    "first_name",
-                    models.CharField(
-                        help_text="From 1 to 100 characters!",
-                        max_length=100,
-                        validators=[
-                            django.core.validators.MinLengthValidator(1),
-                            django.core.validators.MaxLengthValidator(100),
-                        ],
-                        verbose_name="First Name",
-                    ),
+                    "birth_date",
+                    models.DateField(blank=True, null=True, verbose_name="Birth Date"),
                 ),
-                (
-                    "last_name",
-                    models.CharField(
-                        help_text="From 1 to 100 characters!",
-                        max_length=100,
-                        validators=[
-                            django.core.validators.MinLengthValidator(1),
-                            django.core.validators.MaxLengthValidator(100),
-                        ],
-                        verbose_name="Last Name",
-                    ),
-                ),
-                ("birth_date", models.DateField(verbose_name="Birth Date")),
                 ("bio", models.TextField(blank=True, null=True, verbose_name="Bio")),
                 (
                     "avatar",
@@ -478,8 +465,8 @@ class Migration(migrations.Migration):
                     "city",
                     models.ForeignKey(
                         blank=True,
-                        default="Unknown",
-                        on_delete=django.db.models.deletion.SET_DEFAULT,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
                         to="app.city",
                         verbose_name="City",
                     ),
@@ -488,8 +475,8 @@ class Migration(migrations.Migration):
                     "country",
                     models.ForeignKey(
                         blank=True,
-                        default="Unknown",
-                        on_delete=django.db.models.deletion.SET_DEFAULT,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
                         to="app.country",
                         verbose_name="Country",
                     ),
@@ -498,8 +485,8 @@ class Migration(migrations.Migration):
                     "department",
                     models.ForeignKey(
                         blank=True,
-                        default="Unknown",
-                        on_delete=django.db.models.deletion.SET_DEFAULT,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
                         to="app.department",
                         verbose_name="Department",
                     ),
@@ -508,8 +495,8 @@ class Migration(migrations.Migration):
                     "position",
                     models.ForeignKey(
                         blank=True,
-                        default="Unknown",
-                        on_delete=django.db.models.deletion.SET_DEFAULT,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
                         to="app.position",
                         verbose_name="Position",
                     ),
@@ -526,7 +513,7 @@ class Migration(migrations.Migration):
             options={
                 "verbose_name": "Profile",
                 "verbose_name_plural": "Profiles",
-                "ordering": ("first_name", "last_name"),
+                "ordering": ("user__first_name", "user__last_name"),
             },
         ),
         migrations.CreateModel(
@@ -615,8 +602,8 @@ class Migration(migrations.Migration):
                     "status",
                     models.ForeignKey(
                         blank=True,
-                        default="Unknown",
-                        on_delete=django.db.models.deletion.SET_DEFAULT,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
                         to="app.status",
                         verbose_name="Status",
                     ),
@@ -728,6 +715,11 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
+            options={
+                "verbose_name": "Comment",
+                "verbose_name_plural": "Comments",
+                "ordering": ("-created_at",),
+            },
         ),
         migrations.CreateModel(
             name="Rating",
