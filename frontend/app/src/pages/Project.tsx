@@ -1,5 +1,5 @@
 import Header from "../components/Header";
-import Projects from "../components/Projects";
+import Project from "../components/Project";
 import Pagination from "../components/Pagination";
 import Footer from "../components/Footer";
 
@@ -10,11 +10,10 @@ export default function Page() {
       <div className="mx-auto max-w-7xl px-8">
         <div className="mx-auto max-w-2xl max-w-none py-8">
           <h2 className="text-2xl font-montserrat font-bold text-gray-900 border-b-2 py-2">
-            Projects
+            Project #124
           </h2>
-          <Projects></Projects>
+          <Project></Project>
         </div>
-        <Pagination></Pagination>
       </div>
       <Footer></Footer>
     </div>
